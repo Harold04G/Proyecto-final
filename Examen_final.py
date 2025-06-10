@@ -52,320 +52,122 @@ st.write("El análisis de un dataset sobre cáncer ocular es esencial para compr
 
 st.markdown("Exploración de un dataset médico de pacientes con distintos tipos de cáncer ocular.")
 
+import pandas as pd
+import plotly.express as px
+import scipy.stats as stats
+import numpy as np
+import streamlit as st
+from scipy.stats import f_oneway
+
 # Cargar dataset
 df = pd.read_csv("eye_cancer_filtrado.csv")
-df.columns = df.columns.str.strip()  # Elimina espacios extra en los nombres de columnas
-#st.write("Columnas del DataFrame:", df.columns.tolist())  # Muestra los nombres para depuración
+df.columns = df.columns.str.strip()
+df['Fecha de diagnóstico'] = pd.to_datetime(df['Fecha de diagnóstico'])
+df['Año de diagnóstico'] = df['Fecha de diagnóstico'].dt.year
+df['Edad'] = pd.to_numeric(df['Edad'], errors='coerce')
+df = df.dropna(subset=['Edad'])
 
-# Mostrar tabla de datos
-st.subheader("Vista previa del dataset")
-st.dataframe(df.head())
+# Título principal
+st.title("Análisis del Cáncer Ocular")
+st.write("Exploración del dataset médico de pacientes con distintos tipos de cáncer ocular.")
 
-st.title("Analisis del estado del paciente por tipo de tratamiento.")
-# Gráfico: Estado del resultado por tipo de tratamiento, uno para cada estado
-resultado_tratamiento = df.groupby(['Tipo de Tratamiento', 'Estado del Resultado']).size().reset_index(name='Cantidad')
-estados = resultado_tratamiento['Estado del Resultado'].unique()
-figs = {}
-# Crear los gráficos para cada estado
-for estado in estados:
-    df_estado = resultado_tratamiento[resultado_tratamiento['Estado del Resultado'] == estado]
-    fig = px.bar(df_estado, x='Tipo de Tratamiento', y='Cantidad',
-                 title=f'Número de Pacientes - Estado: {estado}',
-                 labels={'Cantidad': 'Número de Pacientes'})
-    figs[estado] = fig
+# --- Selector en la barra lateral ---
+opcion = st.sidebar.selectbox(
+    "Selecciona el análisis que deseas visualizar:",
+    [
+        "Información sobre el cáncer ocular",
+        "Vista previa del dataset",
+        "Tratamiento vs Estado del Paciente",
+        "Marcadores Genéticos por Tipo de Cáncer",
+        "Diagnósticos por Año",
+        "Distribución de Edad",
+        "Edad por Tipo de Cáncer"
+    ]
+)
 
-# Selección del estado del resultado
-estado_seleccionado = st.selectbox("Selecciona el estado del resultado:", estados)
-# Mostrar el gráfico correspondiente
-st.plotly_chart(figs[estado_seleccionado], use_container_width=True)
+# --- 1. Información sobre el cáncer ocular ---
+if opcion == "Información sobre el cáncer ocular":
+    st.subheader("¿Qué es el cáncer ocular?")
+    st.write("""
+    El cáncer ocular es una enfermedad poco común pero grave que afecta los tejidos del ojo...
+    """)  # Puedes usar tu contenido completo aquí.
+    st.image("https://eyecareguam.com/wp-content/uploads/2023/10/AdobeStock_515867330_ocular_tumors-1024x630.jpg")
 
-# Verifica si existe la columna 'Proporción', si no, la calcula como ejemplo
-if "Proporción" not in df.columns:
-    # Calcula la proporción de cada marcador genético por tipo de cáncer
+# --- 2. Vista previa del dataset ---
+elif opcion == "Vista previa del dataset":
+    st.subheader("Vista previa del dataset")
+    st.dataframe(df.head())
+
+# --- 3. Tratamiento vs Estado del Paciente ---
+elif opcion == "Tratamiento vs Estado del Paciente":
+    st.subheader("Análisis del estado del paciente por tipo de tratamiento")
+    resultado_tratamiento = df.groupby(['Tipo de Tratamiento', 'Estado del Resultado']).size().reset_index(name='Cantidad')
+    estados = resultado_tratamiento['Estado del Resultado'].unique()
+    figs = {}
+    for estado in estados:
+        df_estado = resultado_tratamiento[resultado_tratamiento['Estado del Resultado'] == estado]
+        fig = px.bar(df_estado, x='Tipo de Tratamiento', y='Cantidad', title=f'Estado: {estado}')
+        figs[estado] = fig
+    estado_seleccionado = st.selectbox("Selecciona el estado del resultado:", estados)
+    st.plotly_chart(figs[estado_seleccionado], use_container_width=True)
+
+# --- 4. Marcadores Genéticos por Tipo de Cáncer ---
+elif opcion == "Marcadores Genéticos por Tipo de Cáncer":
+    st.subheader("Proporción de marcadores genéticos por tipo de cáncer")
     df_counts = df.groupby(["Tipo de Cáncer", "Marcadores genéticos"]).size().reset_index(name="count")
     total_por_cancer = df_counts.groupby("Tipo de Cáncer")["count"].transform("sum")
     df_counts["Proporción"] = df_counts["count"] / total_por_cancer
-else:
-    df_counts = df
 
-# Gráfica de barras apiladas: proporción de marcadores genéticos por tipo de cáncer
-fig_prop = px.bar(
-    df_counts,
-    x="Tipo de Cáncer",
-    y="Proporción",
-    color="Marcadores genéticos",
-    barmode="stack",
-    text_auto=True,
-    title="Proporción de marcadores genéticos por tipo de cáncer"
-)
+    fig_prop = px.bar(df_counts, x="Tipo de Cáncer", y="Proporción", color="Marcadores genéticos",
+                      barmode="stack", text_auto=True)
 
-# Gráfica de barras agrupadas: conteo de marcadores genéticos por tipo de cáncer
-df_genetico_counts = df.groupby(["Tipo de Cáncer", "Marcadores genéticos"]).size().reset_index(name="count")
-fig_geneticos = px.bar(
-    df_genetico_counts,
-    x="Tipo de Cáncer",
-    y="count",
-    color="Marcadores genéticos",
-    barmode="group",
-    text_auto=True,
-    title="Distribución de tipos de cáncer según marcadores genéticos"
-)
+    st.plotly_chart(fig_prop, use_container_width=True)
 
-# Análisis estadístico: prueba de chi-cuadrado de independencia
-tabla_cancer_genetico = pd.crosstab(df["Tipo de Cáncer"], df["Marcadores genéticos"])
-chi2_gen, p_gen, dof_gen, expected_gen = stats.chi2_contingency(tabla_cancer_genetico)
+    fig_geneticos = px.bar(df_counts, x="Tipo de Cáncer", y="count", color="Marcadores genéticos",
+                           barmode="group", text_auto=True)
+    st.subheader("Distribución de tipos de cáncer según marcadores genéticos")
+    st.plotly_chart(fig_geneticos, use_container_width=True)
 
-# Conclusión
-if p_gen < 0.05:
-    conclusion_gen = "Se encontró una asociación estadísticamente significativa entre los marcadores genéticos y el tipo de cáncer diagnosticado (p < 0.05)."
-else:
-    conclusion_gen = "No se encontró una asociación estadísticamente significativa entre los marcadores genéticos y el tipo de cáncer diagnosticado (p ≥ 0.05)."
+    tabla = pd.crosstab(df["Tipo de Cáncer"], df["Marcadores genéticos"])
+    chi2, p, dof, _ = stats.chi2_contingency(tabla)
+    st.subheader("Prueba Chi-cuadrado de independencia")
+    st.write(f"Chi2: {chi2:.4f}, p-valor: {p:.4f}")
+    st.info("Se encontró una asociación significativa." if p < 0.05 else "No se encontró una asociación significativa.")
 
-# Mostrar los resultados del análisis estadístico y gráficos en Streamlit
-st.title("Análisis de Marcadores Genéticos y Tipos de Cáncer")
+# --- 5. Diagnósticos por Año ---
+elif opcion == "Diagnósticos por Año":
+    st.subheader("Cantidad de pacientes diagnosticados por año")
+    df_diagnosticos = df['Año de diagnóstico'].value_counts().sort_index().reset_index()
+    df_diagnosticos.columns = ['Año de diagnóstico', 'Cantidad']
+    fig_diag = px.bar(df_diagnosticos, x='Año de diagnóstico', y='Cantidad', text_auto=True)
+    st.plotly_chart(fig_diag, use_container_width=True)
 
-st.subheader("Proporción de marcadores genéticos por tipo de cáncer")
-st.plotly_chart(fig_prop, use_container_width=True)
+    observed = df_diagnosticos['Cantidad'].values
+    expected = [observed.sum() / len(observed)] * len(observed)
+    chi2_diag, p_diag = stats.chisquare(f_obs=observed, f_exp=expected)
+    st.write(f"Chi2: {chi2_diag:.4f}, p-valor: {p_diag:.4f}")
+    st.info("Diferencias significativas entre años." if p_diag < 0.05 else "No hay diferencias significativas.")
 
-st.subheader("Distribución de tipos de cáncer según marcadores genéticos")
-st.plotly_chart(fig_geneticos, use_container_width=True)
+# --- 6. Distribución de Edad ---
+elif opcion == "Distribución de Edad":
+    st.subheader("Distribución de la Edad de los Pacientes Diagnosticados")
+    fig_edad = px.histogram(df, x='Edad', nbins=20, title='Distribución de Edad', text_auto=True)
+    st.plotly_chart(fig_edad, use_container_width=True)
 
-st.subheader("Prueba de Chi-cuadrado de independencia")
-st.write(f"Chi2: {chi2_gen:.4f}, p-valor: {p_gen:.4f}, grados de libertad: {dof_gen}")
-st.info(conclusion_gen)
+    st.subheader("Estadísticas Descriptivas")
+    st.write(f"Media: {df['Edad'].mean():.2f}")
+    st.write(f"Mediana: {df['Edad'].median():.2f}")
+    st.write(f"Desviación Estándar: {df['Edad'].std():.2f}")
 
+# --- 7. Edad por Tipo de Cáncer ---
+elif opcion == "Edad por Tipo de Cáncer":
+    st.subheader("Edad de los Pacientes por Tipo de Cáncer")
+    fig_edad_cancer = px.box(df, x='Tipo de Cáncer', y='Edad',
+                             title='Distribución de Edad por Tipo de Cáncer',
+                             points='all')
+    st.plotly_chart(fig_edad_cancer, use_container_width=True)
 
-import plotly.express as px
-import scipy.stats as stats
-
-# Asegurarse de que la columna de fecha es datetime
-df['Fecha de diagnóstico'] = pd.to_datetime(df['Fecha de diagnóstico'])
-
-# Cantidad de pacientes diagnosticados por año
-df['Año de diagnóstico'] = df['Fecha de diagnóstico'].dt.year
-diagnosticos_por_año = df['Año de diagnóstico'].value_counts().sort_index()
-df_diagnosticos = diagnosticos_por_año.reset_index()
-df_diagnosticos.columns = ['Año de diagnóstico', 'Cantidad']
-
-# Gráfica de barras con plotly
-fig_diag = px.bar(
-    df_diagnosticos,
-    x='Año de diagnóstico',
-    y='Cantidad',
-    text_auto=True,
-    title='Cantidad de pacientes diagnosticados por año'
-)
-fig_diag.show()
-
-# Análisis estadístico: ¿la cantidad de diagnósticos varía significativamente entre años?
-# Prueba de chi-cuadrado sobre la frecuencia observada vs. uniforme
-observed = df_diagnosticos['Cantidad'].values
-expected = [observed.sum() / len(observed)] * len(observed)
-chi2_diag, p_diag = stats.chisquare(f_obs=observed, f_exp=expected)
-
-# Conclusión
-if p_diag < 0.05:
-    conclusion_diag = "Existe una diferencia estadísticamente significativa en la cantidad de pacientes diagnosticados entre los años (p < 0.05)."
-else:
-    conclusion_diag = "No se observa una diferencia estadísticamente significativa en la cantidad de pacientes diagnosticados entre los años (p ≥ 0.05)."
-
-print(f"Chi2: {chi2_diag:.4f}, p-valor: {p_diag:.4f}")
-print("Conclusión:", conclusion_diag)
-# Mostrar el gráfico en Streamlit
-st.title("Cantidad de Pacientes Diagnosticados por Año")
-st.plotly_chart(fig_diag, use_container_width=True)
-st.subheader("Análisis de la cantidad de pacientes diagnosticados por año")
-st.write(f"Chi2: {chi2_diag:.4f}, p-valor: {p_diag:.4f}")
-st.info(conclusion_diag)
-# Análisis de la edad de los pacientes diagnosticados
-st.title("Análisis de la Edad de los Pacientes Diagnosticados")
-# Asegurarse de que la columna de edad es numérica
-df['Edad'] = pd.to_numeric(df['Edad'], errors='coerce')
-# Eliminar filas con edad NaN
-df = df.dropna(subset=['Edad'])
-# Histograma de la edad de los pacientes diagnosticados
-fig_edad = px.histogram(
-    df,
-    x='Edad',
-    nbins=20,
-    title='Distribución de la Edad de los Pacientes Diagnosticados',
-    labels={'Edad': 'Edad del Paciente'},
-    text_auto=True
-)
-# Mostrar el gráfico en Streamlit
-st.plotly_chart(fig_edad, use_container_width=True)
-# Análisis estadístico: media, mediana y desviación estándar de la edad
-media_edad = df['Edad'].mean()
-mediana_edad = df['Edad'].median()
-desviacion_edad = df['Edad'].std()
-st.subheader("Estadísticas de la Edad de los Pacientes")
-st.write(f"Media de Edad: {media_edad:.2f} años")
-st.write(f"Mediana de Edad: {mediana_edad:.2f} años")
-st.write(f"Desviación Estándar de Edad: {desviacion_edad:.2f} años")
-
-# Análisis de la edad de los pacientes diagnosticados por tipo de cáncer
-st.title("Análisis de la Edad de los Pacientes Diagnosticados por Tipo de Cáncer")
-# Gráfico de caja de la edad por tipo de cáncer
-fig_edad_cancer = px.box(
-    df,
-    x='Tipo de Cáncer',
-    y='Edad',
-    title='Distribución de la Edad de los Pacientes por Tipo de Cáncer',
-    labels={'Edad': 'Edad del Paciente', 'Tipo de Cáncer': 'Tipo de Cáncer'},
-    points='all'
-)
-# Mostrar el gráfico en Streamlit
-st.plotly_chart(fig_edad_cancer, use_container_width=True)
-# Análisis estadístico: ANOVA para comparar la edad entre tipos de cáncer
-from scipy.stats import f_oneway
-# Agrupar por tipo de cáncer y obtener las edades
-grupos_edad = [group['Edad'].values for name, group in df.groupby('Tipo de Cáncer')]
-# Realizar ANOVA
-anova_result = f_oneway(*grupos_edad)
-# Conclusión del ANOVA
-if anova_result.pvalue < 0.05:
-    conclusion_anova = "Existe una diferencia estadísticamente significativa en la edad de los pacientes diagnosticados entre los diferentes tipos de cáncer (p < 0.05)."
-else:
-        conclusion_anova = "No se observa una diferencia estadísticamente significativa en la edad de los pacientes diagnosticados entre los diferentes tipos de cáncer (p ≥ 0.05)."
-# Mostrar resultados del ANOVA
-st.subheader("Resultados del ANOVA")
-st.write(f"F-statistic: {anova_result.statistic:.4f}, p-valor: {anova_result.pvalue:.4f}")
-st.info(conclusion_anova)
-# Análisis de la edad de los pacientes diagnosticados por tipo de tratamiento
-st.title("Análisis de la Edad de los Pacientes Diagnosticados por Tipo de Tratamiento")
-# Gráfico de caja de la edad por tipo de tratamiento
-fig_edad_tratamiento = px.box(
-    df,
-    x='Tipo de Tratamiento',
-    y='Edad',
-    title='Distribución de la Edad de los Pacientes por Tipo de Tratamiento',
-    labels={'Edad': 'Edad del Paciente', 'Tipo de Tratamiento': 'Tipo de Tratamiento'},
-    points='all'
-)
-# Mostrar el gráfico en Streamlit
-st.plotly_chart(fig_edad_tratamiento, use_container_width=True)
-# Análisis estadístico: ANOVA para comparar la edad entre tipos de tratamiento
-grupos_edad_tratamiento = [group['Edad'].values for name, group in df.groupby('Tipo de Tratamiento')]
-anova_result_tratamiento = f_oneway(*grupos_edad_tratamiento)
-# Conclusión del ANOVA para tratamiento
-if anova_result_tratamiento.pvalue < 0.05:
-    conclusion_anova_tratamiento = "Existe una diferencia estadísticamente significativa en la edad de los pacientes diagnosticados entre los diferentes tipos de tratamiento (p < 0.05)."
-else:
-        conclusion_anova_tratamiento = "No se observa una diferencia estadísticamente significativa en la edad de los pacientes diagnosticados entre los diferentes tipos de tratamiento (p ≥ 0.05)."
-# Mostrar resultados del ANOVA para tratamiento
-st.subheader("Resultados del ANOVA para Tratamiento")
-st.write(f"F-statistic: {anova_result_tratamiento.statistic:.4f}, p-valor: {anova_result_tratamiento.pvalue:.4f}")
-st.info(conclusion_anova_tratamiento)
-# Análisis de la edad de los pacientes diagnosticados por estado del resultado
-st.title("Análisis de la Edad de los Pacientes Diagnosticados por Estado del Resultado")
-# Gráfico de caja de la edad por estado del resultado
-fig_edad_estado = px.box(
-    df,
-    x='Estado del Resultado',
-    y='Edad',
-    title='Distribución de la Edad de los Pacientes por Estado del Resultado',
-    labels={'Edad': 'Edad del Paciente', 'Estado del Resultado': 'Estado del Resultado'},
-    points='all'
-)
-# Mostrar el gráfico en Streamlit
-st.plotly_chart(fig_edad_estado, use_container_width=True)
-# Análisis estadístico: ANOVA para comparar la edad entre estados del resultado
-grupos_edad_estado = [group['Edad'].values for name, group in df.groupby('Estado del Resultado')]
-anova_result_estado = f_oneway(*grupos_edad_estado)
-# Conclusión del ANOVA para estado del resultado
-if anova_result_estado.pvalue < 0.05:
-    conclusion_anova_estado = "Existe una diferencia estadísticamente significativa en la edad de los pacientes diagnosticados entre los diferentes estados del resultado (p < 0.05)."
-else:
-        conclusion_anova_estado = "No se observa una diferencia estadísticamente significativa en la edad de los pacientes diagnosticados entre los diferentes estados del resultado (p ≥ 0.05)."
-# Mostrar resultados del ANOVA para estado del resultado
-st.subheader("Resultados del ANOVA para Estado del Resultado")
-st.write(f"F-statistic: {anova_result_estado.statistic:.4f}, p-valor: {anova_result_estado.pvalue:.4f}")
-st.info(conclusion_anova_estado)
-# Análisis de la edad de los pacientes diagnosticados por género
-st.title("Análisis de la Edad de los Pacientes Diagnosticados por Género")
-# Gráfico de caja de la edad por género
-fig_edad_genero = px.box(
-    df,
-    x='Género',
-    y='Edad',
-    title='Distribución de la Edad de los Pacientes por Género',
-    labels={'Edad': 'Edad del Paciente', 'Género': 'Género'},
-    points='all'
-)
-# Mostrar el gráfico en Streamlit
-st.plotly_chart(fig_edad_genero, use_container_width=True)
-# Análisis estadístico: ANOVA para comparar la edad entre géneros
-grupos_edad_genero = [group['Edad'].values for name, group in df.groupby('Género')]
-anova_result_genero = f_oneway(*grupos_edad_genero)
-# Conclusión del ANOVA para género
-if anova_result_genero.pvalue < 0.05:
-    conclusion_anova_genero = "Existe una diferencia estadísticamente significativa en la edad de los pacientes diagnosticados entre los géneros (p < 0.05)."
-else:
-        conclusion_anova_genero = "No se observa una diferencia estadísticamente significativa en la edad de los pacientes diagnosticados entre los géneros (p ≥ 0.05)."
-# Mostrar resultados del ANOVA para género
-st.subheader("Resultados del ANOVA para Género")
-st.write(f"F-statistic: {anova_result_genero.statistic:.4f}, p-valor: {anova_result_genero.pvalue:.4f}")
-st.info(conclusion_anova_genero)
-
-
-
-# Análisis de la efectividad del tratamiento según el tipo de cáncer con selector
-st.title("Análisis de la Efectividad del Tratamiento según el Tipo de Cáncer")
-
-# Selector de tipo de cáncer
-tipos_cancer = df['Tipo de Cáncer'].unique()
-tipo_cancer_seleccionado = st.selectbox("Selecciona el tipo de cáncer:", tipos_cancer)
-
-# Filtrar el DataFrame por el tipo de cáncer seleccionado
-df_filtrado = df[df['Tipo de Cáncer'] == tipo_cancer_seleccionado].copy()
-
-if not df_filtrado.empty:
-    # Contar resultados por tipo de tratamiento y estado del resultado
-    resumen = df_filtrado.groupby(['Tipo de Tratamiento', 'Estado del Resultado']).size().reset_index(name='Cantidad')
-    total_tratamiento = resumen.groupby('Tipo de Tratamiento')['Cantidad'].transform('sum')
-    resumen['Porcentaje'] = resumen['Cantidad'] / total_tratamiento * 100
-
-    # Considerar "Remisión" como el mejor estado
-    mejor_estado = "En Remisión"
-    resumen_mejor = resumen[resumen['Estado del Resultado'] == mejor_estado]
-
-    # Si no existe "Remisión", muestra todos los estados
-    if resumen_mejor.empty:
-        st.warning(f"No hay pacientes con estado '{mejor_estado}' (recuperado) para este tipo de cáncer. Se muestran todos los estados.")
-        fig = px.bar(
-            resumen,
-            x='Tipo de Tratamiento',
-            y='Porcentaje',
-            color='Estado del Resultado',
-            barmode='group',
-            title=f"Porcentaje de resultados por tipo de tratamiento para {tipo_cancer_seleccionado}",
-            labels={'Porcentaje': 'Porcentaje (%)', 'Tipo de Tratamiento': 'Tipo de Tratamiento'}
-        )
-    else:
-        fig = px.bar(
-            resumen_mejor,
-            x='Tipo de Tratamiento',
-            y='Porcentaje',
-            color='Tipo de Tratamiento',
-            title=f"Porcentaje de pacientes en remisión por tipo de tratamiento para {tipo_cancer_seleccionado}",
-            labels={'Porcentaje': 'Porcentaje en Remisión (%)', 'Tipo de Tratamiento': 'Tipo de Tratamiento'},
-            text_auto=True
-        )
-    st.plotly_chart(fig, use_container_width=True)
-
-    # Análisis estadístico: prueba de chi-cuadrado para comparar la distribución de estados entre tratamientos
-    tabla = pd.crosstab(df_filtrado['Tipo de Tratamiento'], df_filtrado['Estado del Resultado'])
-    if tabla.shape[0] > 1 and tabla.shape[1] > 1:
-        chi2, p, dof, expected = stats.chi2_contingency(tabla)
-        st.subheader("Prueba de Chi-cuadrado de independencia entre tratamiento y estado del resultado")
-        st.write(f"Chi2: {chi2:.4f}, p-valor: {p:.4f}, grados de libertad: {dof}")
-        if p < 0.05:
-            conclusion = "Existe una asociación estadísticamente significativa entre el tipo de tratamiento y el estado del resultado (p < 0.05)."
-        else:
-            conclusion = "No se observa una asociación estadísticamente significativa entre el tipo de tratamiento y el estado del resultado (p ≥ 0.05)."
-        st.info(conclusion)
-    else:
-        st.info("No hay suficientes datos para realizar una prueba de chi-cuadrado en este tipo de cáncer.")
-else:
-    st.warning("No hay datos para este tipo de cáncer.")
-
+    grupos_edad = [grupo['Edad'].values for _, grupo in df.groupby('Tipo de Cáncer')]
+    anova_result = f_oneway(*grupos_edad)
+    st.write(f"ANOVA F: {anova_result.statistic:.4f}, p-valor: {anova_result.pvalue:.4f}")
+    st.info("Diferencias significativas entre grupos." if anova_result.pvalue < 0.05 else "No hay diferencias significativas.")

@@ -3,55 +3,13 @@ import plotly.express as px
 import scipy.stats as stats
 import numpy as np
 import streamlit as st
-
-st.title("Analisis del cancer ocular")
-st.write("En este proyecto analizaremos el dataset de cancer ocular, " \
-        "el cual contiene datos sobre pacientes con esta enfermedad." \
-        " El objetivo es realizar un análisis exploratorio y visualización de los datos.")
-
-#Infromacions sobre el cancer ocular
-st.subheader("Informacion sobre el cancer ocular")
-st.write("El cáncer ocular es una enfermedad poco común pero grave que afecta los tejidos del ojo" \
-        " y sus estructuras circundantes. Aunque su incidencia es menor en comparación con otros tipos de " \
-        "cáncer, puede comprometer seriamente la visión e incluso la vida del paciente si no se detecta y trata a tiempo.")
-st.write("Existen varios tipos de cáncer ocular, entre los que destacan el melanoma ocular, el retinoblastoma," \
-        "el carcinoma de células escamosas y el linfoma ocular. Cada uno de ellos afecta diferentes partes del ojo y" \
-        " tiene características particulares. Por ejemplo, el melanoma ocular es el más frecuente en adultos y" \
-        " se origina en las células productoras de pigmento, mientras que el retinoblastoma es un cáncer pediátrico" \
-        " que afecta la retina.")
-st.write("Los síntomas del cáncer ocular pueden variar dependiendo del tipo y la ubicación del tumor, pero algunos " \
-        "de los más comunes incluyen visión borrosa, pérdida de visión parcial, la presencia de manchas oscuras en el" \
-        " campo visual, dolor ocular persistente, cambios en la forma o tamaño de la pupila y protuberancias visibles" \
-        " en el ojo o el párpado. Ante la aparición de cualquiera de estos signos, es fundamental acudir a un especialista" \
-        " para una evaluación detallada.")
-st.write("El diagnóstico temprano es clave para mejorar el pronóstico del paciente. Los médicos utilizan diversas pruebas," \
-        " como la ecografía ocular, la resonancia magnética y la biopsia, para identificar la presencia de un tumor y determinar" \
-        " su naturaleza. Una vez confirmado el diagnóstico, el tratamiento puede incluir cirugía, radioterapia, quimioterapia y" \
-        " terapias dirigidas, dependiendo del tipo y la etapa de la enfermedad.")
-st.write("Si bien no existen medidas específicas para prevenir el cáncer ocular, proteger los ojos de la exposición excesiva" \
-        " a la radiación ultravioleta y realizar chequeos oftalmológicos periódicos pueden ser estrategias efectivas para " \
-        "detectar anomalías a tiempo. Además, mantener un estilo de vida saludable ayuda a fortalecer el sistema inmunológico" \
-        " y reducir el riesgo de desarrollar enfermedades oncológicas.")
-st.write("El cáncer ocular es una condición seria, pero con un diagnóstico temprano y un tratamiento adecuado, las posibilidades" \
-        " de recuperación pueden mejorar significativamente. La conciencia y la prevención juegan un papel fundamental en la " \
-        "protección de la salud visual. Mantenerse informado y consultar regularmente con un especialista es el mejor camino " \
-        "para cuidar nuestros ojos.")
-st.image("https://eyecareguam.com/wp-content/uploads/2023/10/AdobeStock_515867330_ocular_tumors-1024x630.jpg")
-
-
-import pandas as pd
-import plotly.express as px
-import scipy.stats as stats
-import numpy as np
-import streamlit as st
 from scipy.stats import f_oneway
-
-# Configuración de la página
-#st.set_page_config(page_title="Análisis de Cáncer Ocular", layout="wide")
-
 
 # Carga de datos
 st.title("🔬 Análisis del Cáncer Ocular")
+st.write("En este proyecto analizaremos el dataset de cancer ocular, " \
+        "el cual contiene datos sobre pacientes con esta enfermedad." \
+        " El objetivo es realizar un análisis exploratorio y visualización de los datos.")
 df = pd.read_csv("eye_cancer_filtrado.csv")
 df.columns = df.columns.str.strip()
 df['Fecha de diagnóstico'] = pd.to_datetime(df['Fecha de diagnóstico'])
@@ -64,8 +22,37 @@ st.header("📌 Información sobre el cáncer ocular")
 st.image("https://eyecareguam.com/wp-content/uploads/2023/10/AdobeStock_515867330_ocular_tumors-1024x630.jpg")
 with st.expander("Ver descripción completa"):
     st.write("""
-    El cáncer ocular es una enfermedad poco común pero grave que afecta los tejidos del ojo...
-    """)
+        El cáncer ocular es una enfermedad poco común pero grave que afecta los tejidos del ojo y sus estructuras
+        circundantes. Aunque su incidencia es menor en comparación con otros tipos de cáncer, puede comprometer 
+        seriamente la visión e incluso la vida del paciente si no se detecta y trata a tiempo.
+
+        Existen varios tipos de cáncer ocular, entre los que destacan el melanoma ocular, el retinoblastoma,el 
+        carcinoma de células escamosas y el linfoma ocular. Cada uno de ellos afecta diferentes partes del ojo 
+        y tiene características particulares. Por ejemplo, el melanoma ocular es el más frecuente en adultos y 
+        se origina en las células productoras de pigmento, mientras que el retinoblastoma es un cáncer pediátrico 
+        que afecta la retina.
+
+        Los síntomas del cáncer ocular pueden variar dependiendo del tipo y la ubicación del tumor, pero algunos de
+        los más comunes incluyen visión borrosa, pérdida de visión parcial, la presencia de manchas oscuras en el 
+        campo visual, dolor ocular persistente, cambios en la forma o tamaño de la pupila y protuberancias visibles
+        en el ojo o el párpado. Ante la aparición de cualquiera de estos signos, es fundamental acudir a un especialista 
+        para una evaluación detallada.
+
+        El diagnóstico temprano es clave para mejorar el pronóstico del paciente. Los médicos utilizan diversas pruebas,
+         como la ecografía ocular, la resonancia magnética y la biopsia, para identificar la presencia de un tumor y determinar 
+        su naturaleza. Una vez confirmado el diagnóstico, el tratamiento puede incluir cirugía, radioterapia, quimioterapia y 
+        terapias dirigidas, dependiendo del tipo y la etapa de la enfermedad.
+
+        Si bien no existen medidas específicas para prevenir el cáncer ocular, proteger los ojos de la exposición excesiva a la 
+        radiación ultravioleta y realizar chequeos oftalmológicos periódicos pueden ser estrategias efectivas para detectar 
+        anomalías a tiempo. Además, mantener un estilo de vida saludable ayuda a fortalecer el sistema inmunológico y reducir el 
+        riesgo de desarrollar enfermedades oncológicas.
+
+        El cáncer ocular es una condición seria, pero con un diagnóstico temprano y un tratamiento adecuado, las posibilidades 
+        de recuperación pueden mejorar significativamente. La conciencia y la prevención juegan un papel fundamental en la protección
+         de la salud visual. Mantenerse informado y consultar regularmente con un especialista es el mejor camino para cuidar nuestros
+         ojos.
+        """)
 
 # Vista previa del dataset
 st.header("📁 Vista previa del dataset")
@@ -73,6 +60,7 @@ st.dataframe(df.head())
 st.markdown(f"**Total de registros:** {df.shape[0]} | **Columnas:** {df.shape[1]}")
 
 # Selector de análisis
+st.header("🔍 Selecciona el análisis que deseas realizar")
 analisis = st.selectbox("Selecciona el análisis que deseas realizar:", [
     "Estado por tratamiento",
     "Marcadores genéticos por tipo de cáncer",

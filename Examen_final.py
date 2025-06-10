@@ -20,7 +20,7 @@ df = df.dropna(subset=['Edad'])
 # Información general
 st.header("📌 Información sobre el cáncer ocular")
 st.image("https://eyecareguam.com/wp-content/uploads/2023/10/AdobeStock_515867330_ocular_tumors-1024x630.jpg")
-with st.expander("Ver descripción completa"):
+with st.expander("Conocer información sobre el cáncer ocular"):
     st.write("""
         El cáncer ocular es una enfermedad poco común pero grave que afecta los tejidos del ojo y sus estructuras
         circundantes. Aunque su incidencia es menor en comparación con otros tipos de cáncer, puede comprometer 
@@ -79,11 +79,13 @@ if analisis == "Estado del paciente por tratamiento":
     fig = px.pie(df_estado, names='Tipo de Tratamiento', values='Cantidad', title=f'Distribución de Pacientes - Estado: {estado_seleccionado}')
     st.plotly_chart(fig, use_container_width=True)
 
-    tabla = pd.crosstab(df['Tipo de Tratamiento'], df['Estado del Resultado'])
-    chi2, p, dof, _ = stats.chi2_contingency(tabla)
-    st.write(f"Chi² = {chi2:.4f}, p-valor = {p:.4f}")
-    conclusion = "Existe una asociación significativa entre tipo de tratamiento y el estado del paciente." if p < 0.05 else "No se encontró asociación significativa entre tratamiento y estado."
-    st.info(conclusion)
+    if st.toggle("Realizar prueba estadística "):
+        tabla = pd.crosstab(df['Tipo de Tratamiento'], df['Estado del Resultado'])
+        chi2, p, dof, _ = stats.chi2_contingency(tabla)
+        st.markdown("### Prueba de Chi-Cuadrado:")
+        st.write(f"Estadistico = {chi2:.4f}, Valor de p = {p:.4f}")
+        conclusion = "Existe una asociación significativa entre tipo de tratamiento y el estado del paciente." if p < 0.05 else "No se encontró asociación significativa entre tratamiento y estado."
+        st.info(conclusion)
 
 # Marcadores genéticos
 elif analisis == "Influencia de los marcadores genéticos por tipo de cáncer":
@@ -95,11 +97,14 @@ elif analisis == "Influencia de los marcadores genéticos por tipo de cáncer":
     st.plotly_chart(fig_prop, use_container_width=True)
     fig_gen = px.bar(df_counts, x="Tipo de Cáncer", y="count", color="Marcadores genéticos", barmode="group", text_auto=True)
     st.plotly_chart(fig_gen, use_container_width=True)
-    tabla = pd.crosstab(df["Tipo de Cáncer"], df["Marcadores genéticos"])
-    chi2, p, dof, _ = stats.chi2_contingency(tabla)
-    st.write(f"Chi² = {chi2:.4f}, p-valor = {p:.4f}")
-    conclusion = "Existe una relación significativa entre tipo de cáncer y marcador genético." if p < 0.05 else "No se encontró relación significativa entre los marcadores y tipos de cáncer."
-    st.info(conclusion)
+
+    if st.toggle("Realizar prueba estadística  "):
+        tabla = pd.crosstab(df["Tipo de Cáncer"], df["Marcadores genéticos"])
+        chi2, p, dof, _ = stats.chi2_contingency(tabla)
+        st.markdown("### Prueba de Chi-Cuadrado:")
+        st.write(f"Estadistico = {chi2:.4f}, Valor de p = {p:.4f}")
+        conclusion = "Existe una relación significativa entre tipo de cáncer y marcador genético." if p < 0.05 else "No se encontró relación significativa entre los marcadores y tipos de cáncer."
+        st.info(conclusion)
 
 # Diagnósticos por año
 elif analisis == "Número de diagnósticos por año":
@@ -108,12 +113,15 @@ elif analisis == "Número de diagnósticos por año":
     diagnosticos.columns = ['Año', 'Cantidad']
     fig = px.bar(diagnosticos, x='Año', y='Cantidad', text_auto=True)
     st.plotly_chart(fig, use_container_width=True)
-    observed = diagnosticos['Cantidad'].values
-    expected = [observed.sum() / len(observed)] * len(observed)
-    chi2, p = stats.chisquare(f_obs=observed, f_exp=expected)
-    st.write(f"Chi² = {chi2:.4f}, p-valor = {p:.4f}")
-    conclusion = "La cantidad de diagnósticos varía significativamente entre los años." if p < 0.05 else "No hay diferencia significativa entre los años analizados."
-    st.info(conclusion)
+
+    if st.toggle("Realizar prueba estadística   "):
+        observed = diagnosticos['Cantidad'].values
+        expected = [observed.sum() / len(observed)] * len(observed)
+        chi2, p = stats.chisquare(f_obs=observed, f_exp=expected)
+        st.markdown("### Prueba de Chi-Cuadrado:")
+        st.write(f"Estadistico = {chi2:.4f}, Valor de p = {p:.4f}")
+        conclusion = "La cantidad de diagnósticos varía significativamente entre los años." if p < 0.05 else "No hay diferencia significativa entre los años analizados."
+        st.info(conclusion)
 
 # Distribución de edad
 elif analisis == "Número de pacientes por edad":
@@ -132,31 +140,36 @@ elif analisis == "Efectividad del tratamiento segun el tipo de cáncer":
     resumen['Porcentaje'] = resumen.groupby('Tipo de Tratamiento')['Cantidad'].transform(lambda x: x / x.sum() * 100)
     fig = px.sunburst(resumen, path=['Tipo de Tratamiento', 'Estado del Resultado'], values='Porcentaje', title=f'Efectividad del tratamiento - {tipo}')
     st.plotly_chart(fig, use_container_width=True)
-    if resumen.shape[0] >= 2:
+        
+    if st.toggle("Realizar prueba estadística   ") and resumen.shape[0] >= 2:
         tabla = pd.crosstab(df_filtrado['Tipo de Tratamiento'], df_filtrado['Estado del Resultado'])
         chi2, p, dof, _ = stats.chi2_contingency(tabla)
-        st.write(f"Chi² = {chi2:.4f}, p-valor = {p:.4f}")
+        st.markdown("### Prueba de Chi-Cuadrado:")
+        st.write(f"Estadistico = {chi2:.4f}, Valor de p = {p:.4f}")
         conclusion = "El tipo de tratamiento influye significativamente en los resultados del paciente." if p < 0.05 else "No se encontró relación significativa entre tratamiento y resultado en este tipo de cáncer."
         st.info(conclusion)
-    else:
+    elif resumen.shape[0] < 2:
         st.warning("Datos insuficientes para prueba estadística")
-
+   
 # Conclusión general
-st.header("📌 Conclusión General")
-st.write("""
-    Este análisis exploratorio del dataset de cáncer ocular ha permitido identificar patrones y relaciones significativas 
-    entre las variables. Los resultados sugieren que el tipo de tratamiento y los marcadores genéticos tienen un impacto 
-    considerable en el estado del paciente y la efectividad del tratamiento. Además, la distribución de diagnósticos por año 
-    y la edad de los pacientes ofrecen una visión clara de la demografía afectada por esta enfermedad.
 
-    La información obtenida es valiosa para mejorar la comprensión del cáncer ocular y puede servir como base para futuras 
-    investigaciones y estrategias de tratamiento.
-""")
 #Sugerecnios y recomendaciones de diagnóstico tempreno
-st.header("💡 Sugerencias y Recomendaciones")
-st.write("""
-    - **Chequeos regulares:** Realizar exámenes oftalmológicos periódicos para detectar cualquier anomalía a tiempo.
-    - **Protección UV:** Usar gafas de sol con protección UV para reducir el riesgo de daño ocular.
-    - **Educación:** Informar a los pacientes sobre los síntomas del cáncer ocular para que busquen atención médica temprana.
-    - **Investigación continua:** Fomentar la investigación en tratamientos y diagnósticos para mejorar las tasas de supervivencia.
-""")
+
+with st.expander("Ver Conclusión y Recomendaciones"):
+    st.header("📌 Conclusión General")
+    st.write("""
+        Este análisis exploratorio del dataset de cáncer ocular ha permitido identificar patrones y relaciones significativas 
+        entre las variables. Los resultados sugieren que el tipo de tratamiento y los marcadores genéticos tienen un impacto 
+        considerable en el estado del paciente y la efectividad del tratamiento. Además, la distribución de diagnósticos por año 
+        y la edad de los pacientes ofrecen una visión clara de la demografía afectada por esta enfermedad.
+
+        La información obtenida es valiosa para mejorar la comprensión del cáncer ocular y puede servir como base para futuras 
+        investigaciones y estrategias de tratamiento.
+    """)
+    st.header("💡 Sugerencias y Recomendaciones")
+    st.write("""
+        - **Chequeos regulares:** Realizar exámenes oftalmológicos periódicos para detectar cualquier anomalía a tiempo.
+        - **Protección UV:** Usar gafas de sol con protección UV para reducir el riesgo de daño ocular.
+        - **Educación:** Informar a los pacientes sobre los síntomas del cáncer ocular para que busquen atención médica temprana.
+        - **Investigación continua:** Fomentar la investigación en tratamientos y diagnósticos para mejorar las tasas de supervivencia.
+    """)

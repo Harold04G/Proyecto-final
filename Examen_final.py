@@ -53,40 +53,26 @@ st.write("El análisis de un dataset sobre cáncer ocular es esencial para compr
 
 st.markdown("Exploración de un dataset médico de pacientes con distintos tipos de cáncer ocular.")
 
+import pandas as pd
+import plotly.express as px
+import scipy.stats as stats
+import numpy as np
+import streamlit as st
+from scipy.stats import f_oneway
 
-# -------------------------
-# CONFIGURACIÓN VISUAL
-# -------------------------
-st.set_page_config(
-    page_title="Análisis de Cáncer Ocular",
-    page_icon="🧿",
-    layout="wide",
-    initial_sidebar_state="expanded"
-)
-
+# Configuración de la página y estilos
+st.set_page_config(page_title="Análisis de Cáncer Ocular", layout="wide")
 st.markdown("""
     <style>
-        .main {
-            background-color: #f7f9fc;
-            color: #1f1f1f;
-            font-family: 'Segoe UI', sans-serif;
-        }
-        h1, h2, h3, h4 {
-            color: #00264d;
-        }
-        .stAlert, .stMarkdown, .stDataFrame, .stPlotlyChart {
-            background-color: #ffffff;
-            border-radius: 10px;
-            padding: 1em;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-        }
+    .main { background-color: #f5f9ff; }
+    h1, h2, h3 { color: #003366; }
+    .stPlotlyChart { padding: 10px; background: #ffffff; border-radius: 10px; box-shadow: 0 2px 6px rgba(0,0,0,0.1); }
+    .stDataFrame { background: #ffffff; border-radius: 10px; padding: 10px; }
     </style>
 """, unsafe_allow_html=True)
 
-# -------------------------
-# CARGA Y PREPROCESAMIENTO
-# -------------------------
-st.sidebar.header("Configuración de análisis")
+# Carga de datos
+st.title("🔬 Análisis del Cáncer Ocular")
 df = pd.read_csv("eye_cancer_filtrado.csv")
 df.columns = df.columns.str.strip()
 df['Fecha de diagnóstico'] = pd.to_datetime(df['Fecha de diagnóstico'])
@@ -94,137 +80,101 @@ df['Año de diagnóstico'] = df['Fecha de diagnóstico'].dt.year
 df['Edad'] = pd.to_numeric(df['Edad'], errors='coerce')
 df = df.dropna(subset=['Edad'])
 
-# -------------------------
-# MENÚ LATERAL DE NAVEGACIÓN
-# -------------------------
-opciones = [
-    "Información general sobre el cáncer ocular",
-    "Vista previa del dataset",
-    "Análisis por tratamiento y estado",
-    "Análisis de marcadores genéticos",
+# Información general
+st.header("📌 Información sobre el cáncer ocular")
+st.image("https://eyecareguam.com/wp-content/uploads/2023/10/AdobeStock_515867330_ocular_tumors-1024x630.jpg")
+with st.expander("Ver descripción completa"):
+    st.write("""
+    El cáncer ocular es una enfermedad poco común pero grave que afecta los tejidos del ojo...
+    """)
+
+# Vista previa del dataset
+st.header("📁 Vista previa del dataset")
+st.dataframe(df.head())
+st.markdown(f"**Total de registros:** {df.shape[0]} | **Columnas:** {df.shape[1]}")
+
+# Selector de análisis
+analisis = st.selectbox("Selecciona el análisis que deseas realizar:", [
+    "Estado por tratamiento",
+    "Marcadores genéticos por tipo de cáncer",
     "Diagnósticos por año",
-    "Distribución de edad de pacientes",
-    "Edad según atributos clínicos",
+    "Distribución de edad",
+    "Edad por tipo de cáncer",
+    "Edad por tratamiento",
+    "Edad por estado del resultado",
+    "Edad por género",
     "Efectividad del tratamiento por tipo de cáncer"
-]
+])
 
-seleccion = st.sidebar.radio("Selecciona un análisis:", opciones)
-
-# -------------------------
-# INFORMACIÓN GENERAL
-# -------------------------
-if seleccion == opciones[0]:
-    st.title("🧿 Información sobre el cáncer ocular")
-    st.image("https://eyecareguam.com/wp-content/uploads/2023/10/AdobeStock_515867330_ocular_tumors-1024x630.jpg")
-    with st.expander("Leer más sobre la enfermedad"):
-        st.write("""
-        El cáncer ocular es una enfermedad poco común pero grave que afecta los tejidos del ojo y sus estructuras circundantes...
-        """)
-
-# -------------------------
-# PREVISUALIZACIÓN DEL DATASET
-# -------------------------
-elif seleccion == opciones[1]:
-    st.title("📋 Vista previa del dataset")
-    st.dataframe(df.head())
-    st.success("Dimensiones del dataset: {} filas y {} columnas".format(df.shape[0], df.shape[1]))
-
-# -------------------------
-# ANÁLISIS POR TRATAMIENTO Y ESTADO
-# -------------------------
-elif seleccion == opciones[2]:
-    st.title("📊 Análisis del estado del paciente por tratamiento")
+# Estado por tratamiento
+if analisis == "Estado por tratamiento":
+    st.subheader("📊 Estado del paciente por tratamiento")
     resultado_tratamiento = df.groupby(['Tipo de Tratamiento', 'Estado del Resultado']).size().reset_index(name='Cantidad')
     estados = resultado_tratamiento['Estado del Resultado'].unique()
     estado_seleccionado = st.selectbox("Selecciona el estado del resultado:", estados)
     df_estado = resultado_tratamiento[resultado_tratamiento['Estado del Resultado'] == estado_seleccionado]
-    fig = px.bar(df_estado, x='Tipo de Tratamiento', y='Cantidad',
-                 title=f'Número de Pacientes - Estado: {estado_seleccionado}',
-                 labels={'Cantidad': 'Número de Pacientes'}, color='Tipo de Tratamiento')
+    fig = px.bar(df_estado, x='Tipo de Tratamiento', y='Cantidad', title=f'Número de Pacientes - Estado: {estado_seleccionado}', labels={'Cantidad': 'Número de Pacientes'}, color='Tipo de Tratamiento')
     st.plotly_chart(fig, use_container_width=True)
 
-# -------------------------
-# ANÁLISIS DE MARCADORES GENÉTICOS
-# -------------------------
-elif seleccion == opciones[3]:
-    st.title("🧬 Marcadores genéticos y tipos de cáncer")
+# Marcadores genéticos
+elif analisis == "Marcadores genéticos por tipo de cáncer":
+    st.subheader("🧬 Proporción de marcadores genéticos por tipo de cáncer")
     df_counts = df.groupby(["Tipo de Cáncer", "Marcadores genéticos"]).size().reset_index(name="count")
     total_por_cancer = df_counts.groupby("Tipo de Cáncer")["count"].transform("sum")
     df_counts["Proporción"] = df_counts["count"] / total_por_cancer
-
-    fig_prop = px.bar(df_counts, x="Tipo de Cáncer", y="Proporción", color="Marcadores genéticos",
-                      barmode="stack", text_auto=True, title="Proporción de marcadores genéticos")
+    fig_prop = px.bar(df_counts, x="Tipo de Cáncer", y="Proporción", color="Marcadores genéticos", barmode="stack", text_auto=True)
     st.plotly_chart(fig_prop, use_container_width=True)
-
-    fig_gen = px.bar(df_counts, x="Tipo de Cáncer", y="count", color="Marcadores genéticos",
-                     barmode="group", text_auto=True, title="Distribución absoluta de marcadores")
+    fig_gen = px.bar(df_counts, x="Tipo de Cáncer", y="count", color="Marcadores genéticos", barmode="group", text_auto=True)
     st.plotly_chart(fig_gen, use_container_width=True)
-
     tabla = pd.crosstab(df["Tipo de Cáncer"], df["Marcadores genéticos"])
     chi2, p, dof, _ = stats.chi2_contingency(tabla)
-    st.info(f"Chi² = {chi2:.4f}, p-valor = {p:.4f}, df = {dof}")
-    st.success("Hay asociación significativa." if p < 0.05 else "No hay asociación significativa.")
+    st.write(f"Chi² = {chi2:.4f}, p-valor = {p:.4f}")
+    st.info("Asociación significativa" if p < 0.05 else "No significativa")
 
-# -------------------------
-# DIAGNÓSTICOS POR AÑO
-# -------------------------
-elif seleccion == opciones[4]:
-    st.title("📅 Diagnósticos por año")
-    diagnosticos_por_año = df['Año de diagnóstico'].value_counts().sort_index().reset_index()
-    diagnosticos_por_año.columns = ['Año', 'Cantidad']
-    fig = px.bar(diagnosticos_por_año, x='Año', y='Cantidad', text_auto=True,
-                 title="Cantidad de diagnósticos por año")
+# Diagnósticos por año
+elif analisis == "Diagnósticos por año":
+    st.subheader("📆 Diagnósticos por año")
+    diagnosticos = df['Año de diagnóstico'].value_counts().sort_index().reset_index()
+    diagnosticos.columns = ['Año', 'Cantidad']
+    fig = px.bar(diagnosticos, x='Año', y='Cantidad', text_auto=True)
     st.plotly_chart(fig, use_container_width=True)
-    obs = diagnosticos_por_año['Cantidad'].values
-    exp = [obs.sum() / len(obs)] * len(obs)
-    chi2, p = stats.chisquare(f_obs=obs, f_exp=exp)
-    st.info(f"Chi² = {chi2:.4f}, p-valor = {p:.4f}")
-    st.success("Diferencias significativas" if p < 0.05 else "Sin diferencias significativas")
+    observed = diagnosticos['Cantidad'].values
+    expected = [observed.sum() / len(observed)] * len(observed)
+    chi2, p = stats.chisquare(f_obs=observed, f_exp=expected)
+    st.write(f"Chi² = {chi2:.4f}, p-valor = {p:.4f}")
+    st.info("Diferencias significativas" if p < 0.05 else "Sin diferencias")
 
-# -------------------------
-# DISTRIBUCIÓN DE EDAD
-# -------------------------
-elif seleccion == opciones[5]:
-    st.title("🎂 Distribución de edad")
-    fig = px.histogram(df, x='Edad', nbins=20, title='Distribución de la edad')
+# Distribución de edad
+elif analisis == "Distribución de edad":
+    st.subheader("📊 Distribución de edad")
+    fig = px.histogram(df, x='Edad', nbins=20, title='Distribución de edad', text_auto=True)
     st.plotly_chart(fig, use_container_width=True)
-    st.metric("Media", f"{df['Edad'].mean():.1f} años")
-    st.metric("Mediana", f"{df['Edad'].median():.1f} años")
-    st.metric("Desviación estándar", f"{df['Edad'].std():.1f} años")
+    st.write(f"Media: {df['Edad'].mean():.2f} | Mediana: {df['Edad'].median():.2f} | Desviación estándar: {df['Edad'].std():.2f}")
 
-# -------------------------
-# EDAD SEGÚN ATRIBUTOS CLÍNICOS
-# -------------------------
-elif seleccion == opciones[6]:
-    st.title("📈 Comparación de edad por atributos")
-    opciones_atributos = ['Tipo de Cáncer', 'Tipo de Tratamiento', 'Estado del Resultado', 'Género']
-    atributo = st.selectbox("Selecciona un atributo para comparar edades:", opciones_atributos)
-    fig = px.box(df, x=atributo, y='Edad', points='all', title=f"Edad por {atributo}")
+# Comparaciones por categorías
+elif analisis.startswith("Edad por"):
+    categoria = analisis.replace("Edad por ", "")
+    st.subheader(f"📈 Edad por {categoria}")
+    fig = px.box(df, x=categoria, y='Edad', points='all', title=f'Distribución de Edad por {categoria}')
     st.plotly_chart(fig, use_container_width=True)
-    grupos = [g['Edad'].values for _, g in df.groupby(atributo)]
+    grupos = [group['Edad'].values for _, group in df.groupby(categoria)]
     resultado = f_oneway(*grupos)
-    st.info(f"ANOVA F = {resultado.statistic:.4f}, p-valor = {resultado.pvalue:.4f}")
-    st.success("Diferencias significativas" if resultado.pvalue < 0.05 else "Sin diferencias significativas")
+    st.write(f"ANOVA F = {resultado.statistic:.4f}, p-valor = {resultado.pvalue:.4f}")
+    st.info("Diferencias significativas" if resultado.pvalue < 0.05 else "Sin diferencias significativas")
 
-# -------------------------
-# EFECTIVIDAD POR TIPO DE CÁNCER
-# -------------------------
-elif seleccion == opciones[7]:
-    st.title("💊 Efectividad del tratamiento por tipo de cáncer")
-    tipo = st.selectbox("Selecciona un tipo de cáncer:", df['Tipo de Cáncer'].unique())
+# Efectividad del tratamiento
+elif analisis == "Efectividad del tratamiento por tipo de cáncer":
+    st.subheader("💊 Efectividad del tratamiento")
+    tipo = st.selectbox("Selecciona el tipo de cáncer:", df['Tipo de Cáncer'].unique())
     df_filtrado = df[df['Tipo de Cáncer'] == tipo]
     resumen = df_filtrado.groupby(['Tipo de Tratamiento', 'Estado del Resultado']).size().reset_index(name='Cantidad')
     resumen['Porcentaje'] = resumen.groupby('Tipo de Tratamiento')['Cantidad'].transform(lambda x: x / x.sum() * 100)
-
-    fig = px.bar(resumen, x='Tipo de Tratamiento', y='Porcentaje', color='Estado del Resultado',
-                 barmode='group', title=f'Efectividad del tratamiento para {tipo}', text_auto=True)
+    fig = px.bar(resumen, x='Tipo de Tratamiento', y='Porcentaje', color='Estado del Resultado', barmode='group', text_auto=True)
     st.plotly_chart(fig, use_container_width=True)
-
     if resumen.shape[0] >= 2:
         tabla = pd.crosstab(df_filtrado['Tipo de Tratamiento'], df_filtrado['Estado del Resultado'])
         chi2, p, dof, _ = stats.chi2_contingency(tabla)
-        st.info(f"Chi² = {chi2:.4f}, p-valor = {p:.4f}, df = {dof}")
-        st.success("Asociación significativa" if p < 0.05 else "No hay asociación significativa")
+        st.write(f"Chi² = {chi2:.4f}, p-valor = {p:.4f}")
+        st.info("Asociación significativa" if p < 0.05 else "No significativa")
     else:
-        st.warning("No hay suficientes datos para realizar prueba estadística")
-
+        st.warning("Datos insuficientes para prueba estadística")

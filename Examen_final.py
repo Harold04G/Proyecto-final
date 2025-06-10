@@ -66,10 +66,6 @@ analisis = st.selectbox("Selecciona el análisis que deseas realizar:", [
     "Marcadores genéticos por tipo de cáncer",
     "Diagnósticos por año",
     "Distribución de edad",
-    "Edad por tipo de cáncer",
-    "Edad por tratamiento",
-    "Edad por estado del resultado",
-    "Edad por género",
     "Efectividad del tratamiento por tipo de cáncer"
 ])
 
@@ -82,6 +78,12 @@ if analisis == "Estado por tratamiento":
     df_estado = resultado_tratamiento[resultado_tratamiento['Estado del Resultado'] == estado_seleccionado]
     fig = px.bar(df_estado, x='Tipo de Tratamiento', y='Cantidad', title=f'Número de Pacientes - Estado: {estado_seleccionado}', labels={'Cantidad': 'Número de Pacientes'}, color='Tipo de Tratamiento')
     st.plotly_chart(fig, use_container_width=True)
+
+    tabla = pd.crosstab(df['Tipo de Tratamiento'], df['Estado del Resultado'])
+    chi2, p, dof, _ = stats.chi2_contingency(tabla)
+    st.write(f"Chi² = {chi2:.4f}, p-valor = {p:.4f}")
+    conclusion = "Existe una asociación significativa entre tipo de tratamiento y el estado del paciente." if p < 0.05 else "No se encontró asociación significativa entre tratamiento y estado."
+    st.info(conclusion)
 
 # Marcadores genéticos
 elif analisis == "Marcadores genéticos por tipo de cáncer":
@@ -96,7 +98,8 @@ elif analisis == "Marcadores genéticos por tipo de cáncer":
     tabla = pd.crosstab(df["Tipo de Cáncer"], df["Marcadores genéticos"])
     chi2, p, dof, _ = stats.chi2_contingency(tabla)
     st.write(f"Chi² = {chi2:.4f}, p-valor = {p:.4f}")
-    st.info("Asociación significativa" if p < 0.05 else "No significativa")
+    conclusion = "Existe una relación significativa entre tipo de cáncer y marcador genético." if p < 0.05 else "No se encontró relación significativa entre los marcadores y tipos de cáncer."
+    st.info(conclusion)
 
 # Diagnósticos por año
 elif analisis == "Diagnósticos por año":
@@ -109,7 +112,8 @@ elif analisis == "Diagnósticos por año":
     expected = [observed.sum() / len(observed)] * len(observed)
     chi2, p = stats.chisquare(f_obs=observed, f_exp=expected)
     st.write(f"Chi² = {chi2:.4f}, p-valor = {p:.4f}")
-    st.info("Diferencias significativas" if p < 0.05 else "Sin diferencias")
+    conclusion = "La cantidad de diagnósticos varía significativamente entre los años." if p < 0.05 else "No hay diferencia significativa entre los años analizados."
+    st.info(conclusion)
 
 # Distribución de edad
 elif analisis == "Distribución de edad":
@@ -117,17 +121,7 @@ elif analisis == "Distribución de edad":
     fig = px.histogram(df, x='Edad', nbins=20, title='Distribución de edad', text_auto=True)
     st.plotly_chart(fig, use_container_width=True)
     st.write(f"Media: {df['Edad'].mean():.2f} | Mediana: {df['Edad'].median():.2f} | Desviación estándar: {df['Edad'].std():.2f}")
-
-# Comparaciones por categorías
-elif analisis.startswith("Edad por"):
-    categoria = analisis.replace("Edad por ", "")
-    st.subheader(f"📈 Edad por {categoria}")
-    fig = px.box(df, x=categoria, y='Edad', points='all', title=f'Distribución de Edad por {categoria}')
-    st.plotly_chart(fig, use_container_width=True)
-    grupos = [group['Edad'].values for _, group in df.groupby(categoria)]
-    resultado = f_oneway(*grupos)
-    st.write(f"ANOVA F = {resultado.statistic:.4f}, p-valor = {resultado.pvalue:.4f}")
-    st.info("Diferencias significativas" if resultado.pvalue < 0.05 else "Sin diferencias significativas")
+    st.info("La distribución muestra un rango amplio de edades con una tendencia central clara, útil para evaluar riesgos por grupo etario.")
 
 # Efectividad del tratamiento
 elif analisis == "Efectividad del tratamiento por tipo de cáncer":
@@ -142,6 +136,7 @@ elif analisis == "Efectividad del tratamiento por tipo de cáncer":
         tabla = pd.crosstab(df_filtrado['Tipo de Tratamiento'], df_filtrado['Estado del Resultado'])
         chi2, p, dof, _ = stats.chi2_contingency(tabla)
         st.write(f"Chi² = {chi2:.4f}, p-valor = {p:.4f}")
-        st.info("Asociación significativa" if p < 0.05 else "No significativa")
+        conclusion = "El tipo de tratamiento influye significativamente en los resultados del paciente." if p < 0.05 else "No se encontró relación significativa entre tratamiento y resultado en este tipo de cáncer."
+        st.info(conclusion)
     else:
         st.warning("Datos insuficientes para prueba estadística")

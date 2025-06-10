@@ -62,21 +62,21 @@ st.markdown(f"**Total de registros:** {df.shape[0]} | **Columnas:** {df.shape[1]
 # Selector de análisis
 st.header("🔍 Selecciona el análisis que deseas realizar")
 analisis = st.selectbox("Selecciona el análisis que deseas realizar:", [
-    "Estado por tratamiento",
-    "Marcadores genéticos por tipo de cáncer",
-    "Diagnósticos por año",
-    "Distribución de edad",
-    "Efectividad del tratamiento por tipo de cáncer"
+    "Estado del paciente por tratamiento",
+    "Influencia de los marcadores genéticos por tipo de cáncer",
+    "Número de diagnósticos por año",
+    "Número de pacientes por edad",
+    "Efectividad del tratamiento segun el tipo de cáncer"
 ])
 
 # Estado por tratamiento
-if analisis == "Estado por tratamiento":
+if analisis == "Estado del paciente por tratamiento":
     st.subheader("📊 Estado del paciente por tratamiento")
     resultado_tratamiento = df.groupby(['Tipo de Tratamiento', 'Estado del Resultado']).size().reset_index(name='Cantidad')
     estados = resultado_tratamiento['Estado del Resultado'].unique()
     estado_seleccionado = st.selectbox("Selecciona el estado del resultado:", estados)
     df_estado = resultado_tratamiento[resultado_tratamiento['Estado del Resultado'] == estado_seleccionado]
-    fig = px.bar(df_estado, x='Tipo de Tratamiento', y='Cantidad', title=f'Número de Pacientes - Estado: {estado_seleccionado}', labels={'Cantidad': 'Número de Pacientes'}, color='Tipo de Tratamiento')
+    fig = px.pie(df_estado, names='Tipo de Tratamiento', values='Cantidad', title=f'Distribución de Pacientes - Estado: {estado_seleccionado}')
     st.plotly_chart(fig, use_container_width=True)
 
     tabla = pd.crosstab(df['Tipo de Tratamiento'], df['Estado del Resultado'])
@@ -86,7 +86,7 @@ if analisis == "Estado por tratamiento":
     st.info(conclusion)
 
 # Marcadores genéticos
-elif analisis == "Marcadores genéticos por tipo de cáncer":
+elif analisis == "Influencia de los marcadores genéticos por tipo de cáncer":
     st.subheader("🧬 Proporción de marcadores genéticos por tipo de cáncer")
     df_counts = df.groupby(["Tipo de Cáncer", "Marcadores genéticos"]).size().reset_index(name="count")
     total_por_cancer = df_counts.groupby("Tipo de Cáncer")["count"].transform("sum")
@@ -102,7 +102,7 @@ elif analisis == "Marcadores genéticos por tipo de cáncer":
     st.info(conclusion)
 
 # Diagnósticos por año
-elif analisis == "Diagnósticos por año":
+elif analisis == "Número de diagnósticos por año":
     st.subheader("📆 Diagnósticos por año")
     diagnosticos = df['Año de diagnóstico'].value_counts().sort_index().reset_index()
     diagnosticos.columns = ['Año', 'Cantidad']
@@ -116,7 +116,7 @@ elif analisis == "Diagnósticos por año":
     st.info(conclusion)
 
 # Distribución de edad
-elif analisis == "Distribución de edad":
+elif analisis == "Número de pacientes por edad":
     st.subheader("📊 Distribución de edad")
     fig = px.histogram(df, x='Edad', nbins=20, title='Distribución de edad', text_auto=True)
     st.plotly_chart(fig, use_container_width=True)
@@ -124,13 +124,13 @@ elif analisis == "Distribución de edad":
     st.info("La distribución muestra un rango amplio de edades con una tendencia central clara, útil para evaluar riesgos por grupo etario.")
 
 # Efectividad del tratamiento
-elif analisis == "Efectividad del tratamiento por tipo de cáncer":
+elif analisis == "Efectividad del tratamiento segun el tipo de cáncer":
     st.subheader("💊 Efectividad del tratamiento")
     tipo = st.selectbox("Selecciona el tipo de cáncer:", df['Tipo de Cáncer'].unique())
     df_filtrado = df[df['Tipo de Cáncer'] == tipo]
     resumen = df_filtrado.groupby(['Tipo de Tratamiento', 'Estado del Resultado']).size().reset_index(name='Cantidad')
     resumen['Porcentaje'] = resumen.groupby('Tipo de Tratamiento')['Cantidad'].transform(lambda x: x / x.sum() * 100)
-    fig = px.bar(resumen, x='Tipo de Tratamiento', y='Porcentaje', color='Estado del Resultado', barmode='group', text_auto=True)
+    fig = px.sunburst(resumen, path=['Tipo de Tratamiento', 'Estado del Resultado'], values='Porcentaje', title=f'Efectividad del tratamiento - {tipo}')
     st.plotly_chart(fig, use_container_width=True)
     if resumen.shape[0] >= 2:
         tabla = pd.crosstab(df_filtrado['Tipo de Tratamiento'], df_filtrado['Estado del Resultado'])
@@ -140,3 +140,23 @@ elif analisis == "Efectividad del tratamiento por tipo de cáncer":
         st.info(conclusion)
     else:
         st.warning("Datos insuficientes para prueba estadística")
+
+# Conclusión general
+st.header("📌 Conclusión General")
+st.write("""
+    Este análisis exploratorio del dataset de cáncer ocular ha permitido identificar patrones y relaciones significativas 
+    entre las variables. Los resultados sugieren que el tipo de tratamiento y los marcadores genéticos tienen un impacto 
+    considerable en el estado del paciente y la efectividad del tratamiento. Además, la distribución de diagnósticos por año 
+    y la edad de los pacientes ofrecen una visión clara de la demografía afectada por esta enfermedad.
+
+    La información obtenida es valiosa para mejorar la comprensión del cáncer ocular y puede servir como base para futuras 
+    investigaciones y estrategias de tratamiento.
+""")
+#Sugerecnios y recomendaciones de diagnóstico tempreno
+st.header("💡 Sugerencias y Recomendaciones")
+st.write("""
+    - **Chequeos regulares:** Realizar exámenes oftalmológicos periódicos para detectar cualquier anomalía a tiempo.
+    - **Protección UV:** Usar gafas de sol con protección UV para reducir el riesgo de daño ocular.
+    - **Educación:** Informar a los pacientes sobre los síntomas del cáncer ocular para que busquen atención médica temprana.
+    - **Investigación continua:** Fomentar la investigación en tratamientos y diagnósticos para mejorar las tasas de supervivencia.
+""")

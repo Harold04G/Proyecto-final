@@ -55,7 +55,7 @@ st.markdown("Exploración de un dataset médico de pacientes con distintos tipos
 # Cargar dataset
 df = pd.read_csv("eye_cancer_filtrado.csv")
 df.columns = df.columns.str.strip()  # Elimina espacios extra en los nombres de columnas
-st.write("Columnas del DataFrame:", df.columns.tolist())  # Muestra los nombres para depuración
+#st.write("Columnas del DataFrame:", df.columns.tolist())  # Muestra los nombres para depuración
 
 # Mostrar tabla de datos
 st.subheader("Vista previa del dataset")

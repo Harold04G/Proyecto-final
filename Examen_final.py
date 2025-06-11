@@ -6,9 +6,10 @@ import streamlit as st
 
 # Carga de datos
 st.title("🔬 Análisis del Cáncer Ocular")
-st.write("En este proyecto analizaremos el dataset de cáncer ocular, " \
-        "el cual contiene datos sobre pacientes con esta enfermedad." \
-        " El objetivo es realizar un análisis exploratorio y visualización de los datos.")
+st.subheader("Por: Harold González y Pablo López" )
+st.write("""En este proyecto analizaremos el dataset de cáncer ocular, 
+        el cual contiene datos sobre pacientes con esta enfermedad.
+        El objetivo es realizar un análisis exploratorio y visualización de los datos.""")
 df = pd.read_csv("eye_cancer_filtrado.csv")
 # Limpieza y preprocesamiento de datos
 df.columns = df.columns.str.strip()
@@ -54,10 +55,12 @@ with st.expander("Informarse sobre el cáncer ocular"):
          ojos.
         """)
 
-# Vista previa del dataset
-st.header("📁 Vista previa del dataset")
-st.dataframe(df.head())
-st.markdown(f"**Total de registros:** {df.shape[0]} | **Columnas:** {df.shape[1]}")
+mostrar= st.toggle("Activar vista previa del dataset")
+if mostrar:
+    # Vista previa del dataset
+    st.header("📁 Vista previa del dataset")
+    st.dataframe(df.head())
+    st.markdown(f"**Total de registros:** {df.shape[0]} | **Columnas:** {df.shape[1]}")
 
 # Selector de análisis
 st.header("🔍 Selecciona el análisis que deseas realizar")

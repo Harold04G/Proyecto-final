@@ -20,7 +20,7 @@ df = df.dropna(subset=['Edad'])
 # Información general
 st.header("📌 Información sobre el cáncer ocular")
 st.image("https://eyecareguam.com/wp-content/uploads/2023/10/AdobeStock_515867330_ocular_tumors-1024x630.jpg")
-with st.expander("Conocer información sobre el cáncer ocular"):
+with st.expander("Informarse sobre el cáncer ocular"):
     st.write("""
         El cáncer ocular es una enfermedad poco común pero grave que afecta los tejidos del ojo y sus estructuras
         circundantes. Aunque su incidencia es menor en comparación con otros tipos de cáncer, puede comprometer 

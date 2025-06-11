@@ -6,7 +6,7 @@ import streamlit as st
 
 # Carga de datos
 st.title("🔬 Análisis del Cáncer Ocular")
-st.write("En este proyecto analizaremos el dataset de cáncer ocular, " \
+st.write("Enffffff este proyecto analizaremos el dataset de cáncer ocular, " \
         "el cual contiene datos sobre pacientes con esta enfermedad." \
         " El objetivo es realizar un análisis exploratorio y visualización de los datos.")
 df = pd.read_csv("eye_cancer_filtrado.csv")
